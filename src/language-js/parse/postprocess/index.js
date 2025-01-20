@@ -1,8 +1,8 @@
-import { locStart, locEnd } from "../../loc.js";
-import isTypeCastComment from "../../utils/is-type-cast-comment.js";
 import isNonEmptyArray from "../../../utils/is-non-empty-array.js";
+import { locEnd, locStart } from "../../loc.js";
 import isBlockComment from "../../utils/is-block-comment.js";
 import isIndentableBlockComment from "../../utils/is-indentable-block-comment.js";
+import isTypeCastComment from "../../utils/is-type-cast-comment.js";
 import visitNode from "./visit-node.js";
 
 /**
@@ -95,22 +95,6 @@ function postprocess(ast, options) {
       // For hack-style pipeline
       case "TopicReference":
         ast.extra = { ...ast.extra, __isUsingHackPipeline: true };
-        break;
-
-      case "ExportAllDeclaration":
-        // TODO: Remove this when https://github.com/meriyah/meriyah/issues/200 get fixed
-        if (parser === "meriyah" && node.exported?.type === "Identifier") {
-          const { exported } = node;
-          const raw = text.slice(locStart(exported), locEnd(exported));
-          if (raw.startsWith('"') || raw.startsWith("'")) {
-            node.exported = {
-              ...node.exported,
-              type: "Literal",
-              value: node.exported.name,
-              raw,
-            };
-          }
-        }
         break;
 
       // In Flow parser, it doesn't generate union/intersection types for single type

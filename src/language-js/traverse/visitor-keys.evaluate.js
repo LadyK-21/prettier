@@ -49,7 +49,6 @@ const additionalVisitorKeys = {
 const excludeKeys = {
   // From `tsVisitorKeys`
   MethodDefinition: ["typeParameters"],
-  TSPropertySignature: ["initializer"],
 
   // From `flowVisitorKeys`
   ArrowFunctionExpression: ["id"],
@@ -61,6 +60,21 @@ const excludeKeys = {
   // Flow parser changed `.types` to `.elementTypes` https://github.com/facebook/flow/commit/5b60e6a81dc277dfab2e88fa3737a4dc9aafdcab
   // TupleTypeAnnotation: ["types"],
   PropertyDefinition: ["tsModifiers"],
+
+  // Legacy property
+  ExportAllDeclaration: ["assertions"],
+  ExportNamedDeclaration: ["assertions"],
+  ImportDeclaration: ["assertions"],
+  ImportExpression: ["attributes"],
+
+  // `key` and `constraint` added in `@typescript-eslint/typescript-estree` v8
+  // https://github.com/typescript-eslint/typescript-eslint/pull/7065
+  // TODO: Use the new AST properties instead
+  TSMappedType: ["key", "constraint"],
+  // `body` added in `@typescript-eslint/typescript-estree` v8
+  // https://github.com/typescript-eslint/typescript-eslint/pull/8920
+  // TODO: Use the new AST properties instead
+  TSEnumDeclaration: ["body"],
 };
 
 const visitorKeys = Object.fromEntries(
@@ -80,13 +94,29 @@ const visitorKeys = Object.fromEntries(
   ]),
 );
 
-// Unsupported
+// Babel will remove this in v8
+delete visitorKeys.DecimalLiteral;
+// Won't exist since we use `createImportExpressions` when parsing with babel
+delete visitorKeys.Import;
+
+// Flow, not supported
 for (const type of [
-  "ComponentDeclaration",
-  "ComponentParameter",
-  "ComponentTypeAnnotation",
-  "ComponentTypeParameter",
-  "DeclareComponent",
+  "MatchArrayPattern",
+  "MatchAsPattern",
+  "MatchBindingPattern",
+  "MatchExpression",
+  "MatchExpressionCase",
+  "MatchIdentifierPattern",
+  "MatchLiteralPattern",
+  "MatchMemberPattern",
+  "MatchObjectPattern",
+  "MatchObjectPatternProperty",
+  "MatchOrPattern",
+  "MatchRestPattern",
+  "MatchStatement",
+  "MatchStatementCase",
+  "MatchUnaryPattern",
+  "MatchWildcardPattern",
 ]) {
   delete visitorKeys[type];
 }

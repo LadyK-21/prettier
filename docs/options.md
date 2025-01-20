@@ -22,6 +22,17 @@ Valid options:
 | ------- | -------------------------- | ------------------------------- |
 | `false` | `--experimental-ternaries` | `experimentalTernaries: <bool>` |
 
+## Experimental Operator Position
+
+Valid options:
+
+- `"start"` - When binary expressions wrap lines, print operators at the start of new lines.
+- `"end"` - Default behavior; when binary expressions wrap lines, print operators at the end of previous lines.
+
+| Default | CLI Override                                                   | API Override                                                  |
+| ------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
+| `"end"` | <code>--experimental-operator-position <start&#124;end></code> | <code>experimentalOperatorPosition: "<start&#124;end>"</code> |
+
 ## Print Width
 
 Specify the line length that the printer will wrap on.
@@ -115,8 +126,6 @@ Note that Prettier never unquotes numeric property names in Angular expressions,
 [quote-props-flow]: https://flow.org/try/#0PQKgBAAgZgNg9gdzCYAoVBjOA7AzgFzAA8wBeMAb1TDAAYAuMARlQF8g
 [quote-props-vue]: https://github.com/prettier/prettier/issues/10127
 
-If this option is set to `preserve`, `singleQuote` to `false` (default value), and `parser` to `json5`, double quotes are always used for strings. This effectively allows using the `json5` parser for “JSON with comments and trailing commas”.
-
 ## JSX Quotes
 
 Use single quotes instead of double quotes in JSX.
@@ -153,6 +162,23 @@ Valid options:
 | Default | CLI Override           | API Override             |
 | ------- | ---------------------- | ------------------------ |
 | `true`  | `--no-bracket-spacing` | `bracketSpacing: <bool>` |
+
+## Object Wrap
+
+_First available in v3.5.0_
+
+Configure how Prettier wraps object literals when they could fit on one line or span multiple lines.
+
+By default, Prettier formats objects as multi-line if there is a newline prior to the first property. Authors can use this heuristic to contextually improve readability, though it has some downsides. See [Multi-line objects](rationale.md#multi-line-objects).
+
+Valid options:
+
+- `"preserve"` - Keep as multi-line, if there is a newline between the opening brace and first property.
+- `"collapse"` - Fit to a single line when possible.
+
+| Default      | CLI Override                                        | API Override                                        |
+| ------------ | --------------------------------------------------- | --------------------------------------------------- |
+| `"preserve"` | <code>--object-wrap <preserve&#124;collapse></code> | <code>objectWrap: "<preserve&#124;collapse>"</code> |
 
 ## Bracket Line
 
@@ -254,8 +280,6 @@ These two options can be used to format code starting and ending at a given char
 - Backwards to the start of the first line containing the selected statement.
 - Forwards to the end of the selected statement.
 
-These options cannot be used with `cursorOffset`.
-
 | Default    | CLI Override          | API Override        |
 | ---------- | --------------------- | ------------------- |
 | `0`        | `--range-start <int>` | `rangeStart: <int>` |
@@ -284,6 +308,7 @@ Valid options:
 - `"less"` (via [postcss-less](https://github.com/shellscape/postcss-less)) _First available in v1.7.1_
 - `"json"` (via [@babel/parser parseExpression](https://babeljs.io/docs/en/next/babel-parser.html#babelparserparseexpressioncode-options)) _First available in v1.5.0_
 - `"json5"` (same parser as `"json"`, but outputs as [json5](https://json5.org/)) _First available in v1.13.0_
+- `"jsonc"` (same parser as `"json"`, but outputs as "JSON with Comments") _First available in v3.2.0_
 - `"json-stringify"` (same parser as `"json"`, but outputs like `JSON.stringify`) _First available in v1.13.0_
 - `"graphql"` (via [graphql/language](https://github.com/graphql/graphql-js/tree/master/src/language)) _First available in v1.5.0_
 - `"markdown"` (via [remark-parse](https://github.com/wooorm/remark/tree/main/packages/remark-parse)) _First available in v1.8.0_
@@ -470,7 +495,7 @@ Valid options:
 
 _First available in v2.6.0_
 
-Enforce single attribute per line in HTML, Vue and JSX.
+Enforce single attribute per line in HTML, Vue, and JSX.
 
 Valid options:
 

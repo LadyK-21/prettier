@@ -1,32 +1,31 @@
-import assert from "node:assert";
-import isNonEmptyArray from "../../utils/is-non-empty-array.js";
-import UnexpectedNodeError from "../../utils/unexpected-node-error.js";
 import {
-  softline,
   group,
+  hardline,
+  ifBreak,
   indent,
   join,
   line,
-  ifBreak,
-  hardline,
+  softline,
 } from "../../document/builders.js";
 import { printDanglingComments } from "../../main/comments/print.js";
-
+import isNonEmptyArray from "../../utils/is-non-empty-array.js";
+import UnexpectedNodeError from "../../utils/unexpected-node-error.js";
+import { hasSameLoc, locEnd, locStart } from "../loc.js";
+import getTextWithoutComments from "../utils/get-text-without-comments.js";
 import {
-  hasComment,
   CommentCheckFlags,
-  shouldPrintComma,
-  needsHardlineAfterDanglingComment,
-  isStringLiteral,
-  rawText,
   createTypeCheckFunction,
+  hasComment,
+  isStringLiteral,
+  needsHardlineAfterDanglingComment,
+  rawText,
+  shouldPrintComma,
 } from "../utils/index.js";
-import { locStart, hasSameLoc, locEnd } from "../loc.js";
 import { printDecoratorsBeforeExport } from "./decorators.js";
 import { printDeclareToken } from "./misc.js";
 
 /**
- * @typedef {import("../../document/builders.js").Doc} Doc
+ * @import {Doc} from "../../document/builders.js"
  */
 
 function printImportDeclaration(path, options, print) {
@@ -34,7 +33,6 @@ function printImportDeclaration(path, options, print) {
   /** @type{Doc[]} */
   return [
     "import",
-    node.module ? " module" : "",
     node.phase ? ` ${node.phase}` : "",
     printImportKind(node),
     printModuleSpecifiers(path, options, print),
@@ -106,10 +104,14 @@ function printExportDeclaration(path, options, print) {
 
 const shouldOmitSemicolon = createTypeCheckFunction([
   "ClassDeclaration",
+  "ComponentDeclaration",
   "FunctionDeclaration",
   "TSInterfaceDeclaration",
   "DeclareClass",
+  "DeclareComponent",
   "DeclareFunction",
+  "DeclareHook",
+  "HookDeclaration",
   "TSDeclareFunction",
   "EnumDeclaration",
 ]);
@@ -249,106 +251,50 @@ function shouldPrintSpecifiers(node, options) {
   return text.trimEnd().endsWith("from");
 }
 
-function shouldPrintAttributes(node, options) {
-  if (!node.source) {
-    return false;
-  }
-
-  if (isNonEmptyArray(node.attributes) || isNonEmptyArray(node.assertions)) {
-    return true;
-  }
-
-  const text = getTextWithoutComments(
-    options,
-    locEnd(node.source),
-    locEnd(node),
-  ).trimStart();
-
-  return text.startsWith("with") || text.startsWith("assert");
-}
-
-function getTextWithoutComments(options, start, end) {
-  let text = options.originalText.slice(start, end);
-
-  for (const comment of options[Symbol.for("comments")]) {
-    const commentStart = locStart(comment);
-    // Comments are sorted, we can escape if the comment is after the range
-    if (commentStart > end) {
-      break;
-    }
-
-    const commentEnd = locEnd(comment);
-    if (commentEnd < start) {
-      continue;
-    }
-
-    const commentLength = commentEnd - commentStart;
-    text =
-      text.slice(0, commentStart - start) +
-      " ".repeat(commentLength) +
-      text.slice(commentEnd - start);
-  }
-
-  if (process.env.NODE_ENV !== "production") {
-    assert(text.length === end - start);
-  }
-
-  return text;
-}
-
-function getImportAttributesOrAssertionsKeyword(node, options) {
-  if (
-    // Babel parser add this property to indicate the keyword is `assert`
-    node.extra?.deprecatedAssertSyntax ||
-    (isNonEmptyArray(node.assertions) && !isNonEmptyArray(node.attributes))
-  ) {
+function getImportAttributesKeyword(node, options) {
+  // Babel parser add this property to indicate the keyword is `assert`
+  if (node.extra?.deprecatedAssertSyntax) {
     return "assert";
   }
 
-  if (!isNonEmptyArray(node.assertions) && isNonEmptyArray(node.attributes)) {
-    return "with";
-  }
-
-  const firstAttribute = node.attributes?.[0] ?? node.assertions?.[0];
   const textBetweenSourceAndAttributes = getTextWithoutComments(
     options,
     locEnd(node.source),
-    firstAttribute ? locStart(firstAttribute) : locEnd(node),
-  );
+    node.attributes?.[0] ? locStart(node.attributes[0]) : locEnd(node),
+  ).trimStart();
 
-  if (textBetweenSourceAndAttributes.trimStart().startsWith("assert")) {
+  if (textBetweenSourceAndAttributes.startsWith("assert")) {
     return "assert";
   }
 
-  return "with";
+  if (textBetweenSourceAndAttributes.startsWith("with")) {
+    return "with";
+  }
+
+  return isNonEmptyArray(node.attributes) ? "with" : undefined;
 }
 
-/**
- * Print Import Attributes syntax.
- * If old ImportAssertions syntax is used, print them here.
- */
 function printImportAttributes(path, options, print) {
   const { node } = path;
 
-  if (!shouldPrintAttributes(node, options)) {
+  if (!node.source) {
     return "";
   }
 
-  const keyword = getImportAttributesOrAssertionsKeyword(node, options);
+  const keyword = getImportAttributesKeyword(node, options);
+  if (!keyword) {
+    return "";
+  }
+
   /** @type{Doc[]} */
   const parts = [` ${keyword} {`];
 
-  const property = isNonEmptyArray(node.attributes)
-    ? "attributes"
-    : isNonEmptyArray(node.assertions)
-      ? "assertions"
-      : undefined;
-  if (property) {
+  if (isNonEmptyArray(node.attributes)) {
     if (options.bracketSpacing) {
       parts.push(" ");
     }
 
-    parts.push(join(", ", path.map(print, property)));
+    parts.push(join(", ", path.map(print, "attributes")));
 
     if (options.bracketSpacing) {
       parts.push(" ");
@@ -432,8 +378,8 @@ function isShorthandSpecifier(specifier) {
 }
 
 export {
-  printImportDeclaration,
   printExportDeclaration,
-  printModuleSpecifier,
+  printImportDeclaration,
   printImportKind,
+  printModuleSpecifier,
 };

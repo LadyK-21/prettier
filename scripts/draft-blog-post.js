@@ -6,11 +6,11 @@ import createEsmUtils from "esm-utils";
 import fg from "fast-glob";
 import semver from "semver";
 import {
-  getEntries,
-  replaceVersions,
   changelogUnreleasedDirPath,
   changelogUnreleasedDirs,
+  getEntries,
   printEntries,
+  replaceVersions,
 } from "./utils/changelog.js";
 
 const { __dirname, require } = createEsmUtils(import.meta);
@@ -33,7 +33,7 @@ const nextVersion = `${semver.major(version)}.${semver.minor(
 const postGlob = path.join(blogDir, `????-??-??-${nextVersion}.md`);
 const postFile = path.join(
   blogDir,
-  `${new Date().toISOString().replace(/T.+/, "")}-${nextVersion}.md`,
+  `${new Date().toISOString().replace(/T.+/u, "")}-${nextVersion}.md`,
 );
 
 const categories = [
